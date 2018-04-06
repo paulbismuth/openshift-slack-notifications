@@ -106,8 +106,7 @@ func watchEvents(clientset *kubernetes.Clientset) {
 				//cache is empty, let's proceed normally
 				notifySlack(event)
 				cachesvr.Set("last_slack_event", event.Message, cachesvr.DefaultExpiration)
-			}
-			else {
+			} else {
 				// does the cached event message identical?
 				if msg != event.Message {
 					// events are different, send to slack
