@@ -8,11 +8,17 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/patrickmn/go-cache"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 	"strings"
 	"time"
+)
+
+//create cache server
+var (
+	cachesvr = cache.New(1*time.Minute, 2*time.Minute)
 )
 
 type SlackField struct {
@@ -94,7 +100,21 @@ func watchEvents(clientset *kubernetes.Clientset) {
 	for watchEvent := range watcher.ResultChan() {
 		event := watchEvent.Object.(*v1.Event)
 		if event.FirstTimestamp.Time.After(startTime) {
-			notifySlack(event)
+			// check if an identical event has already been sent (ie. identical message field available in the cache)
+			msg, found := cachesvr.Get("last_slack_event")
+			if !found {
+				//cache is empty, let's proceed normally
+				notifySlack(event)
+				cachesvr.Set("last_slack_event", event.Message, cachesvr.DefaultExpiration)
+			}
+			else {
+				// does the cached event message identical?
+				if msg != event.Message {
+					// events are different, send to slack
+					notifySlack(event)
+					cachesvr.Set("last_slack_event", event.Message, cachesvr.DefaultExpiration)
+				}
+			}
 		}
 	}
 }
