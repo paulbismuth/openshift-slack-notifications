@@ -87,7 +87,7 @@ parameters:
   displayName: Application name
   name: APPLICATION_NAME
   required: true
-  value: openshift-slack-notifications
+  value: openshift-slack-notifications-dev
 - description: Openshift console URL. E.g. http://company.com/console
   displayName: OpenShift Console URL
   name: OPENSHIFT_CONSOLE_URL
