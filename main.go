@@ -111,7 +111,7 @@ func watchEvents(clientset *kubernetes.Clientset) {
 				if msg != event.Message {
 					// events are different, send to slack
 					notifySlack(event)
-					cachesvr.Set("last_slack_event", event.Message, cachesvr.DefaultExpiration)
+					cachesvr.Set("last_slack_event", event.Message, 0)
 				}
 			}
 		}
