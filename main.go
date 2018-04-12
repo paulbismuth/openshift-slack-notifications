@@ -100,18 +100,24 @@ func watchEvents(clientset *kubernetes.Clientset) {
 	for watchEvent := range watcher.ResultChan() {
 		event := watchEvent.Object.(*v1.Event)
 		if event.FirstTimestamp.Time.After(startTime) {
+			log.Printf("Handling event: %v", event.Message)
 			// check if an identical event has already been sent (ie. identical message field available in the cache)
 			msg, found := cachesvr.Get("last_slack_event")
 			if !found {
+				log.Printf("Cache is empty, let's send the event to slack.")
 				//cache is empty, let's proceed normally
 				notifySlack(event)
 				cachesvr.Set("last_slack_event", event.Message, 0)
+				log.Printf("event %v has been cached.", event.Message)
 			} else {
 				// does the cached event message identical?
+				log.Printf("Cache is not empty.")
 				if msg != event.Message {
 					// events are different, send to slack
+					log.Printf("Event %v and %v are different", cachesvr.Get("last_slack_event"), event.Message)
 					notifySlack(event)
 					cachesvr.Set("last_slack_event", event.Message, 0)
+					log.Printf("Event %v has been cached.", event.Message)
 				}
 			}
 		}
