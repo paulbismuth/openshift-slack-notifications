@@ -114,7 +114,7 @@ func watchEvents(clientset *kubernetes.Clientset) {
 				log.Printf("Cache is not empty.")
 				if msg != event.Message {
 					// events are different, send to slack
-					log.Printf("Event %v and %v are different", cachesvr.Get("last_slack_event"), event.Message)
+					// log.Printf("Event %v and %v are different", cachesvr.Get("last_slack_event"), event.Message)
 					notifySlack(event)
 					cachesvr.Set("last_slack_event", event.Message, 0)
 					log.Printf("Event %v has been cached.", event.Message)
