@@ -125,7 +125,15 @@ func watchEvents(clientset *kubernetes.Clientset) {
 				msgc = append(msgc, s[0])
 
 				//store message
-				msgc = append(msgc, event.Message)
+				// if readiness or liveness message, only store error string
+				if strings.HasPrefix(event.Message, "Readiness") || strings.HasPrefix(event.Message, "Liveness") {
+					// extract first part of message
+					s := strings.Split(event.Message, "failed: ")
+					msgc = append(msgc, s[1])
+
+				} else {
+					msgc = append(msgc, event.Message)
+				}
 
 				//construct value to be cached
 				currentMessage := strings.Join(msgc, "_")
