@@ -129,7 +129,8 @@ func watchEvents(clientset *kubernetes.Clientset) {
 				if strings.HasPrefix(event.Message, "Readiness") || strings.HasPrefix(event.Message, "Liveness") {
 					// extract first part of message
 					s := strings.Split(event.Message, "failed: ")
-					msgc = append(msgc, s[1])
+					//replace spaces with underscores on stored message
+					msgc = append(msgc, strings.Replace(s[1], " ", "_", -1))
 
 				} else {
 					msgc = append(msgc, event.Message)
