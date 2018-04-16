@@ -102,25 +102,43 @@ func watchEvents(clientset *kubernetes.Clientset) {
 		if event.FirstTimestamp.Time.After(startTime) {
 			log.Printf("Handling event: %v", event.Message)
 			// check if an identical event has already been sent (ie. identical message field available in the cache)
-			msg, found := cachesvr.Get("last_slack_event")
+			cachedMessage, found := cachesvr.Get("last_slack_event")
 			if !found {
 				log.Printf("Cache is empty, let's send the event to slack.")
 				//cache is empty, let's proceed normally
 				notifySlack(event)
 				cachesvr.Set("last_slack_event", event.Message, 0)
-				log.Printf("Event %v has been sent.", event.Message)
-				log.Printf("Event %v has been cached.", event.Message)
+				log.Printf("Event %v has been sent and cached.", event.Message)
 			} else {
 				// does the cached event message identical?
 				log.Printf("Cache is not empty.")
-				if msg != event.Message {
+				// create message string to be cached
+				// namespace_containernamefrompodname_message - special case for readiness and liveness messages
+				var msgc []string
+
+				//store namespace
+				msgc = append(msgc, event.InvolvedObject.Namespace)
+
+				// deduct container name
+				s := strings.Split(event.InvolvedObject.Name, "-")
+				//store container name
+				msgc = append(msgc, s[0])
+
+				//store message
+				msgc = append(msgc, event.Message)
+
+				//construct value to be cached
+				currentMessage := strings.Join(msgc, "_")
+				log.Printf("Current event is: ", currentMessage)
+
+				if cachedMessage != currentMessage {
 					// events are different, send to slack
 					log.Printf("Events are different.")
 					// log.Printf("Event %v and %v are different", cachesvr.Get("last_slack_event"), event.Message)
 					notifySlack(event)
-					cachesvr.Set("last_slack_event", event.Message, 0)
-					log.Printf("Event %v has been sent.", event.Message)
-					log.Printf("Event %v has been cached.", event.Message)
+					log.Printf("Event %v has been sent.", currentMessage)
+					cachesvr.Set("last_slack_event", currentMessage, 0)
+					log.Printf("Event %v has been cached.", currentMessage)
 				}
 			}
 		}
