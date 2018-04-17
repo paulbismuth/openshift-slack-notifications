@@ -107,38 +107,16 @@ func watchEvents(clientset *kubernetes.Clientset) {
 				log.Printf("Cache is empty, let's send the event to slack.")
 				//cache is empty, let's proceed normally
 				notifySlack(event)
-				cachesvr.Set("last_slack_event", event.Message, 0)
-				log.Printf("Event container: %v, message: %v has been sent and cached.", event.InvolvedObject.Name, event.Message)
+				// cache event
+				currentMessage := buildCachedEvent(event)
+				cachesvr.Set("last_slack_event", currentMessage, 0)
+				log.Printf("Cached event: %v", currentMessage)
 			} else {
 				// does the cached event message identical?
 				log.Printf("Cache is not empty.")
 				log.Printf("Cached event: %v", cachedMessage)
-				// create message string to be cached
-				// namespace_containernamefrompodname_message - special case for readiness and liveness messages
-				var msgc []string
-
-				//store namespace
-				msgc = append(msgc, event.InvolvedObject.Namespace)
-
-				// deduct container name
-				s := strings.Split(event.InvolvedObject.Name, "-")
-				//store container name
-				msgc = append(msgc, s[0])
-
-				//store message
-				// if readiness or liveness message, only store error string
-				if strings.HasPrefix(event.Message, "Readiness") || strings.HasPrefix(event.Message, "Liveness") {
-					// extract first part of message
-					s := strings.Split(event.Message, "failed: ")
-					//replace spaces with underscores on stored message
-					msgc = append(msgc, strings.Replace(s[1], " ", "_", -1))
-
-				} else {
-					msgc = append(msgc, event.Message)
-				}
-
-				//construct value to be cached
-				currentMessage := strings.Join(msgc, "_")
+				// build event to be cached
+				currentMessage := buildCachedEvent(event)
 				log.Printf("Current event: %v", currentMessage)
 
 				if cachedMessage != currentMessage {
@@ -155,6 +133,37 @@ func watchEvents(clientset *kubernetes.Clientset) {
 			}
 		}
 	}
+}
+
+func buildCachedEvent(event *v1.Event) string {
+	// create message string to be cached
+	// namespace_containernamefrompodname_message - special case for readiness and liveness messages
+	var msgc []string
+
+	//store namespace
+	msgc = append(msgc, event.InvolvedObject.Namespace)
+
+	// deduct container name
+	s := strings.Split(event.InvolvedObject.Name, "-")
+	//store container name
+	msgc = append(msgc, s[0])
+
+	//store message
+	// if readiness or liveness message, only store error string
+	if strings.HasPrefix(event.Message, "Readiness") || strings.HasPrefix(event.Message, "Liveness") {
+		// extract first part of message
+		s := strings.Split(event.Message, "failed: ")
+		//replace spaces with underscores on stored message
+		msgc = append(msgc, strings.Replace(s[1], " ", "_", -1))
+
+	} else {
+		msgc = append(msgc, event.Message)
+	}
+
+	//construct value to be cached
+	message := strings.Join(msgc, "_")
+
+	return message
 }
 
 func main() {
