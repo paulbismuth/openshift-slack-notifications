@@ -112,6 +112,7 @@ func watchEvents(clientset *kubernetes.Clientset) {
 			} else {
 				// does the cached event message identical?
 				log.Printf("Cache is not empty.")
+				log.Printf("Cached event: %v", cachedMessage)
 				// create message string to be cached
 				// namespace_containernamefrompodname_message - special case for readiness and liveness messages
 				var msgc []string
@@ -138,7 +139,7 @@ func watchEvents(clientset *kubernetes.Clientset) {
 
 				//construct value to be cached
 				currentMessage := strings.Join(msgc, "_")
-				log.Printf("Current event is: ", currentMessage)
+				log.Printf("Current event: %v", currentMessage)
 
 				if cachedMessage != currentMessage {
 					// events are different, send to slack
