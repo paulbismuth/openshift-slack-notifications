@@ -112,7 +112,7 @@ func watchEvents(clientset *kubernetes.Clientset) {
 				cachesvr.Set("last_slack_event", currentMessage, 0)
 				log.Printf("Cached event: %v", currentMessage)
 			} else {
-				// does the cached event message identical?
+				// do the cached events identical?
 				log.Printf("Cache is not empty.")
 				log.Printf("Cached event: %v", cachedMessage)
 				// build event to be cached
