@@ -149,6 +149,8 @@ func watchEvents(clientset *kubernetes.Clientset) {
 					log.Printf("Event %v has been sent.", currentMessage)
 					cachesvr.Set("last_slack_event", currentMessage, 0)
 					log.Printf("Event %v has been cached.", currentMessage)
+				} else {
+					log.Printf("Events are identical. Do not send anything.")
 				}
 			}
 		}
