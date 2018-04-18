@@ -153,8 +153,12 @@ func buildCachedEvent(event *v1.Event) string {
 	if strings.HasPrefix(event.Message, "Readiness") || strings.HasPrefix(event.Message, "Liveness") {
 		// extract first part of message
 		s := strings.Split(event.Message, ": Get http://10.")
-		//replace spaces with underscores on stored message
-		msgc = append(msgc, strings.Replace(s[0], " ", "_", -1))
+
+		//replace spaces with underscores and "Readiness" or "Liveness" strings
+		// to built generic message
+		r := strings.NewReplacer("Readiness", "Liveness/Readiness", "Liveness", "Liveness/Readiness", " ", "_")
+
+		msgc = append(msgc, r.Replace(s[0]))
 
 	} else {
 		msgc = append(msgc, event.Message)
