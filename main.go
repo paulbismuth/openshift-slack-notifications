@@ -181,13 +181,13 @@ func determineEventType(msg string) string {
 
 	switch firstWord {
 	case "Readiness":
-		eventType := "Readiness_Liveness"
+		eventType = "Readiness_Liveness"
 	case "Liveness":
-		eventType := "Readiness_Liveness"
+		eventType = "Readiness_Liveness"
 	case "No":
-		eventType := "No_nodes_available"
+		eventType = "No_nodes_available"
 	case "wanted":
-		eventType := "wanted_to_free_memory"
+		eventType = "wanted_to_free_memory"
 	default:
 		fmt.Println("cannot determine eventType.")
 	}
