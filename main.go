@@ -172,7 +172,7 @@ func buildCachedEvent(event *v1.Event) (string, string) {
 	return message, messageType
 }
 
-func determineEventType(string msg) string {
+func determineEventType(msg string) string {
 	eventType := "undefined"
 
 	// get first message word
