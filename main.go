@@ -101,23 +101,22 @@ func watchEvents(clientset *kubernetes.Clientset) {
 		event := watchEvent.Object.(*v1.Event)
 		if event.FirstTimestamp.Time.After(startTime) {
 			log.Printf("Handling event: namespace: %v, container: %v, message: %v", event.InvolvedObject.Namespace, event.InvolvedObject.Name, event.Message)
+			//determine message type first
+			currentMessage, msgType := buildCachedEvent(event)
 			// check if an identical event has already been sent (ie. identical message field available in the cache)
-			cachedMessage, found := cachesvr.Get("last_slack_event")
+			cachedMessage, found := cachesvr.Get(msgType)
 			if !found {
 				log.Printf("Cache is empty, let's send the event to slack.")
 				//cache is empty, let's proceed normally
 				notifySlack(event)
 				// cache event
-				currentMessage := buildCachedEvent(event)
-				cachesvr.Set("last_slack_event", currentMessage, 0)
-				log.Printf("Cached event: %v", currentMessage)
+				cachesvr.Set(msgType, currentMessage, 0)
+				log.Printf("Cached event: %v. Event type: %v", currentMessage, msgType)
 			} else {
 				// do the cached events identical?
 				log.Printf("Cache is not empty.")
 				log.Printf("Cached event: %v", cachedMessage)
-				// build event to be cached
-				currentMessage := buildCachedEvent(event)
-				log.Printf("Current event: %v", currentMessage)
+				log.Printf("Current event: %v. Event type: %v", currentMessage, msgType)
 
 				if cachedMessage != currentMessage {
 					// events are different, send to slack
@@ -125,7 +124,7 @@ func watchEvents(clientset *kubernetes.Clientset) {
 					// log.Printf("Event %v and %v are different", cachesvr.Get("last_slack_event"), event.Message)
 					notifySlack(event)
 					log.Printf("Event %v has been sent.", currentMessage)
-					cachesvr.Set("last_slack_event", currentMessage, 0)
+					cachesvr.Set(msgType, currentMessage, 0)
 					log.Printf("Event %v has been cached.", currentMessage)
 				} else {
 					log.Printf("Events are identical. Do not send anything.")
@@ -135,8 +134,7 @@ func watchEvents(clientset *kubernetes.Clientset) {
 	}
 }
 
-func buildCachedEvent(event *v1.Event) string {
-	// create message string to be cached
+func buildCachedEvent(event *v1.Event) (string, string) {
 	// namespace_containernamefrompodname_message - special case for readiness and liveness messages
 	var msgc []string
 
@@ -164,10 +162,37 @@ func buildCachedEvent(event *v1.Event) string {
 		msgc = append(msgc, event.Message)
 	}
 
-	//construct value to be cached
+	// construct value to be cached
 	message := strings.Join(msgc, "_")
 
-	return message
+	// determine event type
+
+	messageType := determineEventType(event.Message)
+
+	return message, messageType
+}
+
+func determineEventType(string msg) string {
+	eventType := "undefined"
+
+	// get first message word
+	s := strings.Fields(msg)
+	firstWord := s[0]
+
+	switch firstWord {
+	case "Readiness":
+		eventType := "Readiness_Liveness"
+	case "Liveness":
+		eventType := "Readiness_Liveness"
+	case "No":
+		eventType := "No_nodes_available"
+	case "wanted":
+		eventType := "wanted_to_free_memory"
+	default:
+		fmt.Println("cannot determine eventType.")
+	}
+
+	return eventType
 }
 
 func main() {
