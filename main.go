@@ -149,12 +149,12 @@ func buildCachedEvent(event *v1.Event) string {
 	msgc = append(msgc, s[0])
 
 	//store message
-	// if readiness or liveness message, only store error string
+	// if readiness or liveness message, only store project_containerprefix_Readiness or project_containerprefix_Liveness
 	if strings.HasPrefix(event.Message, "Readiness") || strings.HasPrefix(event.Message, "Liveness") {
 		// extract first part of message
-		s := strings.Split(event.Message, "failed: ")
+		s := strings.Split(event.Message, ": Get http://10.")
 		//replace spaces with underscores on stored message
-		msgc = append(msgc, strings.Replace(s[1], " ", "_", -1))
+		msgc = append(msgc, strings.Replace(s[0], " ", "_", -1))
 
 	} else {
 		msgc = append(msgc, event.Message)
